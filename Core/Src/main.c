@@ -53,6 +53,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c2;
+
 TIM_HandleTypeDef htim3;
 
 UART_HandleTypeDef huart2;
@@ -86,6 +88,7 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_I2C2_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -94,6 +97,107 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#define MPU6050_ADDR 0xD0
+
+
+#define SMPLRT_DIV_REG 0x19
+#define GYRO_CONFIG_REG 0x1B
+#define ACCEL_CONFIG_REG 0x1C
+#define ACCEL_XOUT_H_REG 0x3B
+#define TEMP_OUT_H_REG 0x41
+#define GYRO_XOUT_H_REG 0x43
+#define PWR_MGMT_1_REG 0x6B
+#define WHO_AM_I_REG 0x75
+
+double Accel_X_RAW = 0.0;
+double Accel_Y_RAW = 0.0;
+double Accel_Z_RAW = 0.0;
+double Gyro_X_RAW = 0.0;
+double Gyro_Y_RAW = 0.0;
+double Gyro_Z_RAW = 0.0;
+
+double Ax, Ay, Az, Gx, Gy, Gz;
+
+void MPU6050_Init (void)
+{
+	uint8_t check;
+	uint8_t Data;
+
+	// check device ID WHO_AM_I
+
+	HAL_I2C_Mem_Read (&hi2c2, MPU6050_ADDR,WHO_AM_I_REG,1, &check, 1, 1000);
+
+	if (check == 104)  // 0x68 will be returned by the sensor if everything goes well
+	{
+		// power management register 0X6B we should write all 0's to wake the sensor up
+		Data = 0;
+		HAL_I2C_Mem_Write(&hi2c2, MPU6050_ADDR, PWR_MGMT_1_REG, 1,&Data, 1, 1000);
+
+		// Set DATA RATE of 1KHz by writing SMPLRT_DIV register
+		Data = 0x07;
+		HAL_I2C_Mem_Write(&hi2c2, MPU6050_ADDR, SMPLRT_DIV_REG, 1, &Data, 1, 1000);
+
+		// Set accelerometer configuration in ACCEL_CONFIG Register
+		// XA_ST=0,YA_ST=0,ZA_ST=0, FS_SEL=0 ->   2g
+		Data = 0x00;
+		HAL_I2C_Mem_Write(&hi2c2, MPU6050_ADDR, ACCEL_CONFIG_REG, 1, &Data, 1, 1000);
+
+		// Set Gyroscopic configuration in GYRO_CONFIG Register
+		// XG_ST=0,YG_ST=0,ZG_ST=0, FS_SEL=0 ->   250  /s
+		Data = 0x00;
+		HAL_I2C_Mem_Write(&hi2c2, MPU6050_ADDR, GYRO_CONFIG_REG, 1, &Data, 1, 1000);
+	}
+
+}
+
+
+void MPU6050_Read_Accel (void)
+{
+	uint8_t Rec_Data[6];
+
+	// Read 6 BYTES of data starting from ACCEL_XOUT_H register
+
+	HAL_I2C_Mem_Read (&hi2c2, MPU6050_ADDR, ACCEL_XOUT_H_REG, 1, Rec_Data, 6, 1000);
+
+	Accel_X_RAW = (int16_t)(Rec_Data[0] << 8 | Rec_Data [1]);
+	Accel_Y_RAW = (int16_t)(Rec_Data[2] << 8 | Rec_Data [3]);
+	Accel_Z_RAW = (int16_t)(Rec_Data[4] << 8 | Rec_Data [5]);
+
+	/*** convert the RAW values into acceleration in 'g'
+	     we have to divide according to the Full scale value set in FS_SEL
+	     I have configured FS_SEL = 0. So I am dividing by 16384.0
+	     for more details check ACCEL_CONFIG Register              ****/
+
+	Ax = (Accel_X_RAW * 9.81) / 16384.0;
+	Ay = (Accel_Y_RAW * 9.81) / 16384.0;
+	Az = (Accel_Z_RAW * 9.81) / 16384.0;
+
+}
+
+void MPU6050_Read_Gyro (void)
+{
+	uint8_t Rec_Data[6];
+
+	// Read 6 BYTES of data starting from GYRO_XOUT_H register
+
+	HAL_I2C_Mem_Read (&hi2c2, MPU6050_ADDR, GYRO_XOUT_H_REG, 1, Rec_Data, 6, 1000);
+
+	Gyro_X_RAW = (int16_t)(Rec_Data[0] << 8 | Rec_Data [1]);
+	Gyro_Y_RAW = (int16_t)(Rec_Data[2] << 8 | Rec_Data [3]);
+	Gyro_Z_RAW = (int16_t)(Rec_Data[4] << 8 | Rec_Data [5]);
+
+	/* convert the RAW values into dps ( /s)
+	     we have to divide according to the Full scale value set in FS_SEL
+	     I have configured FS_SEL = 0. So I am dividing by 131.0
+	     for more details check GYRO_CONFIG Register              **/
+
+	Gx = (Gyro_X_RAW * 0.0174) / 131.0;
+	Gy = (Gyro_Y_RAW * 0.0174) / 131.0;
+	Gz = (Gyro_Z_RAW * 0.0174) / 131.0;
+
+}
+
+
 void subscription_cmd_vel_callback(const void * msgin)
 {
 	geometry_msgs__msg__Twist * msg = (geometry_msgs__msg__Twist *)msgin;
@@ -240,7 +344,9 @@ int main(void)
   MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_TIM3_Init();
+  MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
+ MPU6050_Init();
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_3);
@@ -290,6 +396,8 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+	  MPU6050_Read_Accel();
+	 MPU6050_Read_Gyro();
   }
   /* USER CODE END 3 */
 }
@@ -337,6 +445,40 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C2_Init(void)
+{
+
+  /* USER CODE BEGIN I2C2_Init 0 */
+
+  /* USER CODE END I2C2_Init 0 */
+
+  /* USER CODE BEGIN I2C2_Init 1 */
+
+  /* USER CODE END I2C2_Init 1 */
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.ClockSpeed = 100000;
+  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C2_Init 2 */
+
+  /* USER CODE END I2C2_Init 2 */
+
 }
 
 /**
@@ -574,6 +716,8 @@ void StartDefaultTask(void *argument)
 	  rclc_support_t support;
 	  rcl_allocator_t allocator;
 	  rcl_node_t node;
+	  geometry_msgs__msg__Twist imu;
+     rcl_publisher_t imu_pub;
 
 	  allocator = rcl_get_default_allocator();
 
@@ -595,6 +739,11 @@ void StartDefaultTask(void *argument)
 	  	    &node,
 	  	    ROSIDL_GET_MSG_TYPE_SUPPORT(std_msgs, msg, Int16),
 	  	    "rwheel");
+	  rclc_publisher_init_default(
+			&imu_pub,
+	  		&node,
+	  		ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist),
+	  		"imu_raw");
 
 	  // create subscriber
 
@@ -613,9 +762,24 @@ void StartDefaultTask(void *argument)
 	  {
 		msg1.data = LeftWheelEncoder;
 		msg2.data = RightWheelEncoder;
+
+
+		MPU6050_Read_Accel();
+	    MPU6050_Read_Gyro();
+	    imu.linear.x = Ax;
+		imu.linear.y = Ay;
+	    imu.linear.z = Az;
+		imu.angular.x = Gx;
+		imu.angular.y = Gy;
+		imu.angular.z = Gz;
+
 	    rcl_ret_t ret1 = rcl_publish(&publisher1, &msg1, NULL);
 	    rcl_ret_t ret2 = rcl_publish(&publisher2, &msg2, NULL);
-	    rclc_executor_spin_some(&executor, 1000);    						// waits for 1000ns for ros data, theres no data it continues, if there is data then it executes subscription callback
+	    rcl_publish(&imu_pub, &imu, NULL);
+
+	    rclc_executor_spin_some(&executor, 1000);    	// waits for 1000ns for ros data, theres no data it continues, if there is data then it executes subscription callback
+
+
 
 	    if ((ret1 | ret2) != RCL_RET_OK)
 	    {
