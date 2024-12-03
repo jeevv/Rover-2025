@@ -35,6 +35,8 @@
 #include <geometry_msgs/msg/twist.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "mpu.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -80,6 +82,8 @@ double RightMotorSpeed;
 
 const double Length = 0.225;    //distance between wheel and center of bot
 const double WheelRadius = 0.07;
+
+mpu_struct mpu = {0};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -257,6 +261,8 @@ int main(void)
   MX_TIM3_Init();
   MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
+
+  mpu_init(&mpu,&hi2c2);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim3,TIM_CHANNEL_3);
@@ -671,8 +677,20 @@ void StartDefaultTask(void *argument)
 		msg1.data = LeftWheelEncoder;
 		msg2.data = RightWheelEncoder;
 
+		mpu_read(&mpu);
+
+		imu.linear.x = mpu.ax;
+		imu.linear.y = mpu.ay;
+		imu.linear.z = mpu.az;
+
+		imu.angular.x = mpu.gx;
+		imu.angular.y = mpu.gy;
+		imu.angular.z = mpu.gz;
+
+
 	    rcl_ret_t ret1 = rcl_publish(&publisher1, &msg1, NULL);
 	    rcl_ret_t ret2 = rcl_publish(&publisher2, &msg2, NULL);
+
 	    rcl_publish(&imu_pub, &imu, NULL);
 
 	    rclc_executor_spin_some(&executor, 1000);    	// waits for 1000ns for ros data, theres no data it continues, if there is data then it executes subscription callback
