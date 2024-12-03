@@ -14,28 +14,28 @@ void mpu_init(mpu_struct *mpu, I2C_HandleTypeDef *hi2c)
 	uint8_t rx_data;
 
 
-	HAL_I2C_Mem_Read (&hi2c2, MPU6050_ADDR,WHO_AM_I_REG,1, &rx_data, 1, 1000);
+	HAL_I2C_Mem_Read (hi2c, MPU6050_ADDR,WHO_AM_I_REG,1, &rx_data, 1, 1000);
 
 	if (rx_data == 0x68)  // 0x68 will be returned by the sensor if everything goes well
 	{
 		mpu->status = 1;
 		// power management register 0X6B we should write all 0's to wake the sensor up
 		tx_data = 0;
-		HAL_I2C_Mem_Write(&hi2c2, MPU6050_ADDR, PWR_MGMT_1_REG, 1,&tx_data, 1, 1000);
+		HAL_I2C_Mem_Write(hi2c, MPU6050_ADDR, PWR_MGMT_1_REG, 1,&tx_data, 1, 1000);
 
 		// Set tx_data RATE of 1KHz by writing SMPLRT_DIV register
 		tx_data = 0x07;
-		HAL_I2C_Mem_Write(&hi2c2, MPU6050_ADDR, SMPLRT_DIV_REG, 1, &tx_data, 1, 1000);
+		HAL_I2C_Mem_Write(hi2c, MPU6050_ADDR, SMPLRT_DIV_REG, 1, &tx_data, 1, 1000);
 
 		// Set accelerometer configuration in ACCEL_CONFIG Register
 		// XA_ST=0,YA_ST=0,ZA_ST=0, FS_SEL=0 ->   2g
 		tx_data = 0x00;
-		HAL_I2C_Mem_Write(&hi2c2, MPU6050_ADDR, ACCEL_CONFIG_REG, 1, &tx_data, 1, 1000);
+		HAL_I2C_Mem_Write(hi2c, MPU6050_ADDR, ACCEL_CONFIG_REG, 1, &tx_data, 1, 1000);
 
 		// Set Gyroscopic configuration in GYRO_CONFIG Register
 		// XG_ST=0,YG_ST=0,ZG_ST=0, FS_SEL=0 ->   250  /s
 		tx_data = 0x00;
-		HAL_I2C_Mem_Write(&hi2c2, MPU6050_ADDR, GYRO_CONFIG_REG, 1, &tx_data, 1, 1000);
+		HAL_I2C_Mem_Write(hi2c, MPU6050_ADDR, GYRO_CONFIG_REG, 1, &tx_data, 1, 1000);
 	}
 
 	else
@@ -52,7 +52,7 @@ void mpu_read_raw(mpu_struct *mpu)
 
 	// Read 6 BYTES of tx_data starting from ACCEL_XOUT_H register
 
-	HAL_I2C_Mem_Read (&hi2c2, MPU6050_ADDR, ACCEL_XOUT_H_REG, 1, tx_data, 6, 1000);
+	HAL_I2C_Mem_Read (mpu->hi2c, MPU6050_ADDR, ACCEL_XOUT_H_REG, 1, tx_data, 6, 1000);
 
 	mpu->ax_raw = (uint16_t)(tx_data[0] << 8 | tx_data [1]);
 	mpu->ay_raw = (uint16_t)(tx_data[2] << 8 | tx_data [3]);
@@ -61,7 +61,7 @@ void mpu_read_raw(mpu_struct *mpu)
 
 		// Read 6 BYTES of tx_data starting from GYRO_XOUT_H register
 
-	HAL_I2C_Mem_Read (&hi2c2, MPU6050_ADDR, GYRO_XOUT_H_REG, 1, tx_data, 6, 1000);
+	HAL_I2C_Mem_Read (mpu->hi2c, MPU6050_ADDR, GYRO_XOUT_H_REG, 1, tx_data, 6, 1000);
 
 	mpu->gx_raw = (uint16_t)(tx_data[0] << 8 | tx_data [1]);
 	mpu->gy_raw = (uint16_t)(tx_data[2] << 8 | tx_data [3]);
@@ -87,7 +87,7 @@ void mpu_read(mpu_struct *mpu)
 
 	// Read 6 BYTES of tx_data starting from ACCEL_XOUT_H register
 
-	HAL_I2C_Mem_Read (&hi2c2, MPU6050_ADDR, ACCEL_XOUT_H_REG, 1, tx_data, 6, 1000);
+	HAL_I2C_Mem_Read (mpu->hi2c, MPU6050_ADDR, ACCEL_XOUT_H_REG, 1, tx_data, 6, 1000);
 
 	mpu->ax_raw = (uint16_t)(tx_data[0] << 8 | tx_data [1]);
 	mpu->ay_raw = (uint16_t)(tx_data[2] << 8 | tx_data [3]);
@@ -105,7 +105,7 @@ void mpu_read(mpu_struct *mpu)
 
 		// Read 6 BYTES of tx_data starting from GYRO_XOUT_H register
 
-	HAL_I2C_Mem_Read (&hi2c2, MPU6050_ADDR, GYRO_XOUT_H_REG, 1, tx_data, 6, 1000);
+	HAL_I2C_Mem_Read (mpu->hi2c, MPU6050_ADDR, GYRO_XOUT_H_REG, 1, tx_data, 6, 1000);
 
 	mpu->gx_raw = (uint16_t)(tx_data[0] << 8 | tx_data [1]);
 	mpu->gy_raw = (uint16_t)(tx_data[2] << 8 | tx_data [3]);

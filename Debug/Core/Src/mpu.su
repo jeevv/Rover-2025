@@ -1,0 +1,4 @@
+../Core/Src/mpu.c:9:6:mpu_init	40	static
+../Core/Src/mpu.c:49:6:mpu_read_raw	40	static
+../Core/Src/mpu.c:72:6:mpu_scale	16	static
+../Core/Src/mpu.c:84:6:mpu_read	40	static

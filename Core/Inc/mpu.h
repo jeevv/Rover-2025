@@ -8,7 +8,8 @@
 #ifndef INC_MPU_H_
 #define INC_MPU_H_
 
-#include "i2c.h"
+#include "stm32f4xx.h"
+#include "stm32f4xx_hal_i2c.h"
 
 #define MPU6050_ADDR 0xD0
 
