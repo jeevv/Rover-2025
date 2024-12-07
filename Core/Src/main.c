@@ -22,6 +22,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "cmsis_os2.h"
+
 #include <rcl/rcl.h>
 #include <rcl/error_handling.h>
 #include <rclc/rclc.h>
@@ -71,6 +73,25 @@ const osThreadAttr_t defaultTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
+osThreadId_t imuTaskHandle;
+
+const osThreadAttr_t imuTaskAttributes = {
+	.name = "imuTask",
+	.stack_size = 1000 * 4,
+	.priority = (osPriority_t) osPriorityNormal,
+};
+
+geometry_msgs__msg__Twist imuVals[5] = {0};
+
+const osMessageQueueAttr_t imuToUrosAttr = {
+		.name = "imuToUros",
+		.attr_bits = 0,
+		.mq_mem = imuVals,
+		.mq_size = 5*sizeof(geometry_msgs__msg__Twist),
+};
+
+osMessageQueueId_t imuToUros;
+
 static int32_t LeftWheelEncoder=0;
 static int32_t RightWheelEncoder=0;
 
@@ -94,6 +115,7 @@ static void MX_USART2_UART_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_I2C2_Init(void);
 void StartDefaultTask(void *argument);
+void imuTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -286,6 +308,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
+  imuToUros = osMessageQueueNew(5,sizeof(geometry_msgs__msg__Twist),&imuToUrosAttr);
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -294,6 +317,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  imuTaskHandle = osThreadNew(StartDefaultTask, &mpu, &imuTaskAttributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -586,6 +610,29 @@ void * microros_allocate(size_t size, void * state);
 void microros_deallocate(void * pointer, void * state);
 void * microros_reallocate(void * pointer, size_t size, void * state);
 void * microros_zero_allocate(size_t number_of_elements, size_t size_of_element, void * state);
+
+void imuTask(void *argument)
+{
+	mpu_struct *mpu_p = (mpu_struct *) argument;
+
+	for(;;)
+	{
+		mpu_read(mpu_p);
+
+		geometry_msgs__msg__Twist imu;
+
+		imu.linear.x = mpu_p->ax;
+		imu.linear.y = mpu_p->ay;
+		imu.linear.z = mpu_p->az;
+
+		imu.angular.x = mpu_p->gx;
+		imu.angular.y = mpu_p->gy;
+		imu.angular.z = mpu_p->gz;
+
+		osMessageQueuePut(imuToUros,&imu,0U,0U);
+	}
+
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -677,15 +724,7 @@ void StartDefaultTask(void *argument)
 		msg1.data = LeftWheelEncoder;
 		msg2.data = RightWheelEncoder;
 
-		mpu_read(&mpu);
-
-		imu.linear.x = mpu.ax;
-		imu.linear.y = mpu.ay;
-		imu.linear.z = mpu.az;
-
-		imu.angular.x = mpu.gx;
-		imu.angular.y = mpu.gy;
-		imu.angular.z = mpu.gz;
+		osMessageQueueGet(imuToUros, &imu, NULL, 0U);
 
 
 	    rcl_ret_t ret1 = rcl_publish(&publisher1, &msg1, NULL);
