@@ -1,0 +1,23 @@
+Warning: Width correction constrained.  The width correction value must be in the range of [0.000001 mm; 0.199999 mm] for the current design rules.
+Plotted to 'C:\RVCE\Astra\astra_power\stm32carrier_drive\stm32carrier_drive-F_Cu.gbr'.
+Plotted to 'C:\RVCE\Astra\astra_power\stm32carrier_drive\stm32carrier_drive-B_Cu.gbr'.
+Plotted to 'C:\RVCE\Astra\astra_power\stm32carrier_drive\stm32carrier_drive-F_Paste.gbr'.
+Plotted to 'C:\RVCE\Astra\astra_power\stm32carrier_drive\stm32carrier_drive-B_Paste.gbr'.
+Plotted to 'C:\RVCE\Astra\astra_power\stm32carrier_drive\stm32carrier_drive-F_Silkscreen.gbr'.
+Plotted to 'C:\RVCE\Astra\astra_power\stm32carrier_drive\stm32carrier_drive-B_Silkscreen.gbr'.
+Plotted to 'C:\RVCE\Astra\astra_power\stm32carrier_drive\stm32carrier_drive-F_Mask.gbr'.
+Plotted to 'C:\RVCE\Astra\astra_power\stm32carrier_drive\stm32carrier_drive-B_Mask.gbr'.
+Plotted to 'C:\RVCE\Astra\astra_power\stm32carrier_drive\stm32carrier_drive-Edge_Cuts.gbr'.
+Created Gerber job file 'C:\RVCE\Astra\astra_power\stm32carrier_drive\stm32carrier_drive-job.gbrjob'.
+Plotted to 'C:\Users\nithi\Desktop\stm32carrier_drive-F_Cu.gbr'.
+Plotted to 'C:\Users\nithi\Desktop\stm32carrier_drive-B_Cu.gbr'.
+Plotted to 'C:\Users\nithi\Desktop\stm32carrier_drive-F_Paste.gbr'.
+Plotted to 'C:\Users\nithi\Desktop\stm32carrier_drive-B_Paste.gbr'.
+Plotted to 'C:\Users\nithi\Desktop\stm32carrier_drive-F_Silkscreen.gbr'.
+Plotted to 'C:\Users\nithi\Desktop\stm32carrier_drive-B_Silkscreen.gbr'.
+Plotted to 'C:\Users\nithi\Desktop\stm32carrier_drive-F_Mask.gbr'.
+Plotted to 'C:\Users\nithi\Desktop\stm32carrier_drive-B_Mask.gbr'.
+Plotted to 'C:\Users\nithi\Desktop\stm32carrier_drive-Edge_Cuts.gbr'.
+Created Gerber job file 'C:\Users\nithi\Desktop\stm32carrier_drive-job.gbrjob'.
+Info: Done.
+Info: Done.
